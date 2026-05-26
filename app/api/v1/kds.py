@@ -60,7 +60,10 @@ async def update_ticket_status(
     await db.refresh(ticket)
 
     ticket_data = KdsTicketResponse.model_validate(ticket).model_dump(mode="json")
-    sede_id = ticket.order.sede_id
-    await create_event(db, sede_id, "kds_ticket_updated", ticket_data)
+    try:
+        sede_id = ticket.order.sede_id
+        await create_event(db, sede_id, "kds_ticket_updated", ticket_data)
+    except Exception:
+        pass
 
     return ticket

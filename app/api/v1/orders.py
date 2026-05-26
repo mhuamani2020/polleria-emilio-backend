@@ -64,7 +64,10 @@ async def create_order(
     order = await service.create_order(data, current_user.user_id)
 
     order_data = OrderResponse.model_validate(order).model_dump(mode="json")
-    await create_event(db, order.sede_id, "order_created", order_data)
+    try:
+        await create_event(db, order.sede_id, "order_created", order_data)
+    except Exception:
+        pass
 
     result = await db.execute(
         select(KdsTicket).where(KdsTicket.order_id == order.order_id)
@@ -72,7 +75,10 @@ async def create_order(
     ticket = result.scalar_one_or_none()
     if ticket:
         ticket_data = KdsTicketResponse.model_validate(ticket).model_dump(mode="json")
-        await create_event(db, order.sede_id, "kds_ticket_updated", ticket_data)
+        try:
+            await create_event(db, order.sede_id, "kds_ticket_updated", ticket_data)
+        except Exception:
+            pass
 
     return order
 
@@ -91,6 +97,9 @@ async def update_order_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido no encontrado")
 
     order_data = OrderResponse.model_validate(order).model_dump(mode="json")
-    await create_event(db, order.sede_id, "order_status_changed", order_data)
+    try:
+        await create_event(db, order.sede_id, "order_status_changed", order_data)
+    except Exception:
+        pass
 
     return order

@@ -15,6 +15,7 @@ router = APIRouter()
 async def create_event(db: AsyncSession, sede_id: uuid.UUID, type: str, payload: dict):
     event = RealtimeEvent(sede_id=sede_id, type=type, payload=payload)
     db.add(event)
+    await db.flush()
 
 
 @router.websocket("/ws")

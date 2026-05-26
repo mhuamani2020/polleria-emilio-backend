@@ -41,6 +41,7 @@ class OrderService:
         self.db.add(ticket)
 
         await self.db.flush()
+        await self.db.refresh(order, ["items"])
         return order
 
     async def get_orders(
@@ -83,6 +84,7 @@ class OrderService:
                 ticket.status = "listo" if status == "listo" else status
 
         await self.db.flush()
+        await self.db.refresh(order, ["items"])
         return order
 
     async def get_daily_stats(self, sede_id: uuid.UUID | None = None) -> dict:

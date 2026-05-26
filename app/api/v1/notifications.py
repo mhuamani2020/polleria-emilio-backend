@@ -49,8 +49,11 @@ async def create_notification(
     await db.refresh(notif)
 
     notif_data = NotificationResponse.model_validate(notif).model_dump(mode="json")
-    sede_id = current_user.sede_id
-    await create_event(db, sede_id, "notification_new", notif_data)
+    try:
+        sede_id = current_user.sede_id
+        await create_event(db, sede_id, "notification_new", notif_data)
+    except Exception:
+        pass
 
     return notif
 

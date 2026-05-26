@@ -73,7 +73,10 @@ async def create_merma(
 
     if inventory and inventory.status == "Crítico":
         inv_data = InventoryResponse.model_validate(inventory).model_dump(mode="json")
-        await create_event(db, inventory.sede_id, "inventory_critical", inv_data)
+        try:
+            await create_event(db, inventory.sede_id, "inventory_critical", inv_data)
+        except Exception:
+            pass
 
     await db.flush()
     await db.refresh(merma)

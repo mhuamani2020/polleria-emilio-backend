@@ -41,6 +41,9 @@ async def update_inventory(
 
     if item.status == "Crítico":
         inv_data = InventoryResponse.model_validate(item).model_dump(mode="json")
-        await create_event(db, item.sede_id, "inventory_critical", inv_data)
+        try:
+            await create_event(db, item.sede_id, "inventory_critical", inv_data)
+        except Exception:
+            pass
 
     return item
