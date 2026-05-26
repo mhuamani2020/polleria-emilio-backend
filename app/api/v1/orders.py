@@ -59,7 +59,7 @@ async def create_order(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    check_role(current_user, ["admin", "cajero", "mesero"])
+    check_role(current_user, ["cajero"])
     service = OrderService(db)
     order = await service.create_order(data, current_user.user_id)
 
