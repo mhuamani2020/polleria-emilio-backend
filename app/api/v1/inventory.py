@@ -20,7 +20,7 @@ async def list_inventory(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    check_role(current_user, ["admin"])
+    check_role(current_user, ["admin", "cajero"])
     service = InventoryService(db)
     return await service.get_all(sede_id=sede_id, status=status_filter)
 

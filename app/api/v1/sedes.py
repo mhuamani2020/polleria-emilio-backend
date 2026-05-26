@@ -18,7 +18,7 @@ async def list_sedes(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    check_role(current_user, ["admin"])
+    check_role(current_user, ["admin", "cajero", "mesero"])
     result = await db.execute(select(Sede).order_by(Sede.name))
     return list(result.scalars().all())
 
@@ -29,7 +29,7 @@ async def get_sede(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    check_role(current_user, ["admin"])
+    check_role(current_user, ["admin", "cajero", "mesero"])
     result = await db.execute(select(Sede).where(Sede.sede_id == sede_id))
     sede = result.scalar_one_or_none()
     if sede is None:
