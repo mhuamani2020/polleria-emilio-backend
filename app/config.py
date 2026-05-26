@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     @property
+    def async_database_url(self) -> str:
+        return self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
