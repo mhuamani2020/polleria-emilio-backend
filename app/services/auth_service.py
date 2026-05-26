@@ -61,7 +61,7 @@ class AuthService:
                         ip_address=active_session.ip_address,
                         created_at=active_session.created_at,
                     ),
-                ).model_dump(),
+                ).model_dump(mode='json'),
             )
 
         if active_session and force:
