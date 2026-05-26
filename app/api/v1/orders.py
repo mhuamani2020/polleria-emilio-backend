@@ -1,13 +1,17 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.api.deps import get_current_user
 from app.core.permissions import check_role
+from app.models.kds_ticket import KdsTicket
 from app.models.user import User
+from app.schemas.kds_ticket import KdsTicketResponse
 from app.schemas.order import OrderCreate, OrderStatusUpdate, OrderResponse
 from app.services.order_service import OrderService
+from app.websocket import create_event
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -57,7 +61,20 @@ async def create_order(
 ):
     check_role(current_user, ["admin", "cajero", "mesero"])
     service = OrderService(db)
-    return await service.create_order(data, current_user.user_id)
+    order = await service.create_order(data, current_user.user_id)
+
+    order_data = OrderResponse.model_validate(order).model_dump(mode="json")
+    await create_event(db, order.sede_id, "order_created", order_data)
+
+    result = await db.execute(
+        select(KdsTicket).where(KdsTicket.order_id == order.order_id)
+    )
+    ticket = result.scalar_one_or_none()
+    if ticket:
+        ticket_data = KdsTicketResponse.model_validate(ticket).model_dump(mode="json")
+        await create_event(db, order.sede_id, "kds_ticket_updated", ticket_data)
+
+    return order
 
 
 @router.patch("/{order_id}/status", response_model=OrderResponse)
@@ -72,4 +89,8 @@ async def update_order_status(
     order = await service.update_order_status(order_id, data.status)
     if order is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido no encontrado")
+
+    order_data = OrderResponse.model_validate(order).model_dump(mode="json")
+    await create_event(db, order.sede_id, "order_status_changed", order_data)
+
     return order

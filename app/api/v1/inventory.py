@@ -9,6 +9,7 @@ from app.core.permissions import check_role
 from app.models.user import User
 from app.schemas.inventory import InventoryCreate, InventoryUpdate, InventoryResponse
 from app.services.inventory_service import InventoryService
+from app.websocket import create_event
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
@@ -37,4 +38,9 @@ async def update_inventory(
     item = await service.update_stock(inventory_id, data)
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item de inventario no encontrado")
+
+    if item.status == "Crítico":
+        inv_data = InventoryResponse.model_validate(item).model_dump(mode="json")
+        await create_event(db, item.sede_id, "inventory_critical", inv_data)
+
     return item

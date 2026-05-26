@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ from app.core.permissions import check_role
 from app.models.kds_ticket import KdsTicket
 from app.models.user import User
 from app.schemas.kds_ticket import KdsTicketStatusUpdate, KdsTicketResponse
-from datetime import datetime, timezone
+from app.websocket import create_event
 
 router = APIRouter(prefix="/kds", tags=["KDS"])
 
@@ -21,7 +22,7 @@ async def list_kds_tickets(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    check_role(current_user, ["admin", "cajero"])
+    check_role(current_user, ["admin", "cajero", "mesero"])
     from app.models.order import Order
 
     query = select(KdsTicket).join(Order, KdsTicket.order_id == Order.order_id)
@@ -43,7 +44,7 @@ async def update_ticket_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    check_role(current_user, ["admin", "cajero"])
+    check_role(current_user, ["admin", "cajero", "mesero"])
     result = await db.execute(
         select(KdsTicket).where(KdsTicket.ticket_id == ticket_id)
     )
@@ -57,4 +58,9 @@ async def update_ticket_status(
 
     await db.flush()
     await db.refresh(ticket)
+
+    ticket_data = KdsTicketResponse.model_validate(ticket).model_dump(mode="json")
+    sede_id = ticket.order.sede_id
+    await create_event(db, sede_id, "kds_ticket_updated", ticket_data)
+
     return ticket

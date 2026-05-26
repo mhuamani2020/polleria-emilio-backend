@@ -20,6 +20,7 @@ from app.api.v1 import (
     notifications,
     dashboard,
 )
+from app.websocket import router as websocket_router
 
 
 @asynccontextmanager
@@ -62,6 +63,7 @@ app.include_router(kds.router, prefix="/api/v1")
 app.include_router(mermas.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(websocket_router)
 
 
 @app.get("/health")

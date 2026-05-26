@@ -8,7 +8,9 @@ from app.api.deps import get_current_user
 from app.core.permissions import check_role
 from app.models.merma import Merma
 from app.models.user import User
+from app.schemas.inventory import InventoryResponse
 from app.schemas.merma import MermaCreate, MermaResponse
+from app.websocket import create_event
 
 router = APIRouter(prefix="/mermas", tags=["Mermas"])
 
@@ -64,10 +66,14 @@ async def create_merma(
     )
     db.add(merma)
 
-    await inv_service.update_stock(
+    inventory = await inv_service.update_stock(
         data.inventory_id,
         InventoryUpdate(current_stock=new_stock),
     )
+
+    if inventory and inventory.status == "Crítico":
+        inv_data = InventoryResponse.model_validate(inventory).model_dump(mode="json")
+        await create_event(db, inventory.sede_id, "inventory_critical", inv_data)
 
     await db.flush()
     await db.refresh(merma)

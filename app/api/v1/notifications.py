@@ -9,6 +9,7 @@ from app.core.permissions import check_role
 from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.notification import NotificationResponse, NotificationCreate
+from app.websocket import create_event
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
@@ -46,6 +47,11 @@ async def create_notification(
     db.add(notif)
     await db.flush()
     await db.refresh(notif)
+
+    notif_data = NotificationResponse.model_validate(notif).model_dump(mode="json")
+    sede_id = current_user.sede_id
+    await create_event(db, sede_id, "notification_new", notif_data)
+
     return notif
 
 
