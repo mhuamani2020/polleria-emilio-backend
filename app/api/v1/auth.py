@@ -6,7 +6,7 @@ from app.database import get_db
 from app.api.deps import get_current_user, get_current_session
 from app.models.user import User
 from app.models.user_session import UserSession
-from app.schemas.user import UserLogin
+from app.schemas.user import UserLogin, UserResponse
 from app.schemas.auth import TokenResponse, RefreshRequest, SessionResponse
 from app.services.auth_service import AuthService
 
@@ -50,7 +50,7 @@ async def logout(
     return {"message": "Sesión cerrada exitosamente"}
 
 
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=UserResponse)
 async def get_me(
     current_user: User = Depends(get_current_user),
 ):
