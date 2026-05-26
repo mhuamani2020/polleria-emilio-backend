@@ -31,3 +31,8 @@ class SessionResponse(BaseModel):
     is_active: bool
     created_at: datetime
     expires_at: datetime
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str

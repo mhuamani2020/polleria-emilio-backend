@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -7,7 +7,7 @@ from app.api.deps import get_current_user, get_current_session
 from app.models.user import User
 from app.models.user_session import UserSession
 from app.schemas.user import UserLogin, UserResponse
-from app.schemas.auth import TokenResponse, RefreshRequest, SessionResponse
+from app.schemas.auth import TokenResponse, RefreshRequest, SessionResponse, PasswordChange
 from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -55,6 +55,28 @@ async def get_me(
     current_user: User = Depends(get_current_user),
 ):
     return current_user
+
+
+@router.put("/me/password")
+async def change_password(
+    data: PasswordChange,
+    current_user: User = Depends(get_current_user),
+    session: UserSession | None = Depends(get_current_session),
+    db: AsyncSession = Depends(get_db),
+):
+    if len(data.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva contraseña debe tener al menos 8 caracteres",
+        )
+    service = AuthService(db)
+    await service.change_password(
+        user_id=current_user.user_id,
+        current_password=data.current_password,
+        new_password=data.new_password,
+        current_session_id=session.id if session else None,
+    )
+    return {"message": "Contraseña cambiada exitosamente"}
 
 
 @router.get("/me/sessions", response_model=list[SessionResponse])

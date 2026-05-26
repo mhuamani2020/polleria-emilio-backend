@@ -163,6 +163,39 @@ class AuthService:
     async def close_session_by_id(self, session_id: uuid.UUID) -> None:
         await self._close_session(session_id)
 
+    async def change_password(
+        self,
+        user_id: uuid.UUID,
+        current_password: str,
+        new_password: str,
+        current_session_id: uuid.UUID | None = None,
+    ) -> None:
+        result = await self.db.execute(select(User).where(User.user_id == user_id))
+        user = result.scalar_one_or_none()
+        if not user or not verify_password(current_password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Contraseña actual incorrecta",
+            )
+
+        user.password_hash = hash_password(new_password)
+
+        if current_session_id:
+            await self.db.execute(
+                update(UserSession)
+                .where(
+                    UserSession.user_id == user_id,
+                    UserSession.id != current_session_id,
+                    UserSession.is_active == True,
+                )
+                .values(is_active=False, closed_at=datetime.now(timezone.utc))
+            )
+
+        logger.info(
+            "Contraseña cambiada exitosamente",
+            extra={"user_id": str(user_id), "username": user.username},
+        )
+
     async def _get_active_session(self, user_id: uuid.UUID) -> UserSession | None:
         result = await self.db.execute(
             select(UserSession).where(
