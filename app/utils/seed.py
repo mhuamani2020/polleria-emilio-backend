@@ -12,6 +12,7 @@ from app.database import AsyncSessionLocal
 from app.core.security import hash_password
 from app.models.sede import Sede
 from app.models.user import User
+from app.models.user_session import UserSession
 from app.models.category import Category
 from app.models.product import Product, ComboItem
 from app.models.inventory import Inventory
